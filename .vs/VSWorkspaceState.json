@@ -1,0 +1,14 @@
+{
+  "ExpandedNodes": [
+    "",
+    "\\JasonApp",
+    "\\JasonApp\\JasonApp",
+    "\\JasonApp\\JasonApp\\CommonControl",
+    "\\JasonApp\\JasonApp\\Services",
+    "\\JasonApp\\JasonApp\\Services\\TreeBootstrap",
+    "\\JasonApp\\JasonApp\\View",
+    "\\JasonApp\\JasonApp\\ViewModel"
+  ],
+  "SelectedNode": "\\JasonApp\\JasonApp\\Services\\FavoritesService.cs",
+  "PreviewInSolutionExplorer": false
+}

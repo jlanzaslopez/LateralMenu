@@ -1,0 +1,15 @@
+﻿<?xml version="1.0"?>
+<AppManifest AppVersion="1.0.0" DesignTimeVisible="false">
+	<Filters>
+		<Control AssemblyName="JasonApp" ControlFullName="JasonApp.JasonTree">
+			<Property Name="Foreground" />
+			<Property Name="Background" />
+			<Property Name="FontSize" />
+			<Property Name="FontFamily" />
+			<Property Name="StartPath" />
+			<Property Name="CurrentPath" />
+			<Property Name="TagSuffix" />
+			<Property Name="EnableLogs" />
+		</Control>
+	</Filters>
+</AppManifest>

@@ -1,0 +1,190 @@
+{
+  "Version": 1,
+  "WorkspaceRootPath": "C:\\Users\\VictorFernandezTorre\\Desktop\\Repos\\SCADA_CENTRO_CONTROL-OMIApp-Seeker-.NET\\",
+  "Documents": [
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\VictorFernandezTorre\\Desktop\\Repos\\SCADA_CENTRO_CONTROL-OMIApp-Seeker-.NET\\JasonApp\\JasonApp\\AppManifest.xml||{FA3CD31E-987B-443A-9B81-186104E8DAC1}",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:JasonApp\\JasonApp\\AppManifest.xml||{FA3CD31E-987B-443A-9B81-186104E8DAC1}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\VictorFernandezTorre\\Desktop\\Repos\\SCADA_CENTRO_CONTROL-OMIApp-Seeker-.NET\\JasonApp\\JasonApp\\Services\\TreeBootstrap\\TreeBootstrapService.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:JasonApp\\JasonApp\\Services\\TreeBootstrap\\TreeBootstrapService.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\VictorFernandezTorre\\Desktop\\Repos\\SCADA_CENTRO_CONTROL-OMIApp-Seeker-.NET\\JasonApp\\JasonApp\\Services\\TreeBootstrap\\ValueReader.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:JasonApp\\JasonApp\\Services\\TreeBootstrap\\ValueReader.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\VictorFernandezTorre\\Desktop\\Repos\\SCADA_CENTRO_CONTROL-OMIApp-Seeker-.NET\\JasonApp\\JasonApp\\CommonControl\\InstallationsListControl.xaml.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:JasonApp\\JasonApp\\CommonControl\\InstallationsListControl.xaml.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\VictorFernandezTorre\\Desktop\\Repos\\SCADA_CENTRO_CONTROL-OMIApp-Seeker-.NET\\JasonApp\\JasonApp\\ViewModel\\JasonTreeViewModel.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:JasonApp\\JasonApp\\ViewModel\\JasonTreeViewModel.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\VictorFernandezTorre\\Desktop\\Repos\\SCADA_CENTRO_CONTROL-OMIApp-Seeker-.NET\\JasonApp\\JasonApp\\View\\JasonTree.xaml.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:JasonApp\\JasonApp\\View\\JasonTree.xaml.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\VictorFernandezTorre\\Desktop\\Repos\\SCADA_CENTRO_CONTROL-OMIApp-Seeker-.NET\\JasonApp\\JasonApp\\Models\\TreeNode.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:JasonApp\\JasonApp\\Models\\TreeNode.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\VictorFernandezTorre\\Desktop\\Repos\\SCADA_CENTRO_CONTROL-OMIApp-Seeker-.NET\\JasonApp\\JasonApp\\CommonControl\\InstallationsListControl.xaml||{FA3CD31E-987B-443A-9B81-186104E8DAC1}",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:JasonApp\\JasonApp\\CommonControl\\InstallationsListControl.xaml||{FA3CD31E-987B-443A-9B81-186104E8DAC1}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\VictorFernandezTorre\\Desktop\\Repos\\SCADA_CENTRO_CONTROL-OMIApp-Seeker-.NET\\JasonApp\\JasonApp\\View\\JasonTree.xaml||{FA3CD31E-987B-443A-9B81-186104E8DAC1}",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:JasonApp\\JasonApp\\View\\JasonTree.xaml||{FA3CD31E-987B-443A-9B81-186104E8DAC1}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\VictorFernandezTorre\\Desktop\\Repos\\SCADA_CENTRO_CONTROL-OMIApp-Seeker-.NET\\JasonApp\\JasonApp\\Resources\\JasonResources.xaml||{8B382828-6202-11D1-8870-0000F87579D2}",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:JasonApp\\JasonApp\\Resources\\JasonResources.xaml||{8B382828-6202-11D1-8870-0000F87579D2}"
+    }
+  ],
+  "DocumentGroupContainers": [
+    {
+      "Orientation": 0,
+      "VerticalTabListWidth": 256,
+      "DocumentGroups": [
+        {
+          "DockedWidth": 200,
+          "SelectedChildIndex": 3,
+          "Children": [
+            {
+              "$type": "Document",
+              "DocumentIndex": 3,
+              "Title": "InstallationsListControl.xaml.cs",
+              "DocumentMoniker": "C:\\Users\\VictorFernandezTorre\\Desktop\\Repos\\SCADA_CENTRO_CONTROL-OMIApp-Seeker-.NET\\JasonApp\\JasonApp\\CommonControl\\InstallationsListControl.xaml.cs",
+              "RelativeDocumentMoniker": "JasonApp\\JasonApp\\CommonControl\\InstallationsListControl.xaml.cs",
+              "ToolTip": "C:\\Users\\VictorFernandezTorre\\Desktop\\Repos\\SCADA_CENTRO_CONTROL-OMIApp-Seeker-.NET\\JasonApp\\JasonApp\\CommonControl\\InstallationsListControl.xaml.cs",
+              "RelativeToolTip": "JasonApp\\JasonApp\\CommonControl\\InstallationsListControl.xaml.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-10-20T13:46:07.696Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 6,
+              "Title": "TreeNode.cs",
+              "DocumentMoniker": "C:\\Users\\VictorFernandezTorre\\Desktop\\Repos\\SCADA_CENTRO_CONTROL-OMIApp-Seeker-.NET\\JasonApp\\JasonApp\\Models\\TreeNode.cs",
+              "RelativeDocumentMoniker": "JasonApp\\JasonApp\\Models\\TreeNode.cs",
+              "ToolTip": "C:\\Users\\VictorFernandezTorre\\Desktop\\Repos\\SCADA_CENTRO_CONTROL-OMIApp-Seeker-.NET\\JasonApp\\JasonApp\\Models\\TreeNode.cs",
+              "RelativeToolTip": "JasonApp\\JasonApp\\Models\\TreeNode.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-10-20T12:28:47.915Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 7,
+              "Title": "InstallationsListControl.xaml",
+              "DocumentMoniker": "C:\\Users\\VictorFernandezTorre\\Desktop\\Repos\\SCADA_CENTRO_CONTROL-OMIApp-Seeker-.NET\\JasonApp\\JasonApp\\CommonControl\\InstallationsListControl.xaml",
+              "RelativeDocumentMoniker": "JasonApp\\JasonApp\\CommonControl\\InstallationsListControl.xaml",
+              "ToolTip": "C:\\Users\\VictorFernandezTorre\\Desktop\\Repos\\SCADA_CENTRO_CONTROL-OMIApp-Seeker-.NET\\JasonApp\\JasonApp\\CommonControl\\InstallationsListControl.xaml",
+              "RelativeToolTip": "JasonApp\\JasonApp\\CommonControl\\InstallationsListControl.xaml",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003549|",
+              "WhenOpened": "2025-10-20T12:27:13.786Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 0,
+              "Title": "AppManifest.xml",
+              "DocumentMoniker": "C:\\Users\\VictorFernandezTorre\\Desktop\\Repos\\SCADA_CENTRO_CONTROL-OMIApp-Seeker-.NET\\JasonApp\\JasonApp\\AppManifest.xml",
+              "RelativeDocumentMoniker": "JasonApp\\JasonApp\\AppManifest.xml",
+              "ToolTip": "C:\\Users\\VictorFernandezTorre\\Desktop\\Repos\\SCADA_CENTRO_CONTROL-OMIApp-Seeker-.NET\\JasonApp\\JasonApp\\AppManifest.xml",
+              "RelativeToolTip": "JasonApp\\JasonApp\\AppManifest.xml",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAMAAABGAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003576|",
+              "WhenOpened": "2025-10-20T12:24:40.815Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 1,
+              "Title": "TreeBootstrapService.cs",
+              "DocumentMoniker": "C:\\Users\\VictorFernandezTorre\\Desktop\\Repos\\SCADA_CENTRO_CONTROL-OMIApp-Seeker-.NET\\JasonApp\\JasonApp\\Services\\TreeBootstrap\\TreeBootstrapService.cs",
+              "RelativeDocumentMoniker": "JasonApp\\JasonApp\\Services\\TreeBootstrap\\TreeBootstrapService.cs",
+              "ToolTip": "C:\\Users\\VictorFernandezTorre\\Desktop\\Repos\\SCADA_CENTRO_CONTROL-OMIApp-Seeker-.NET\\JasonApp\\JasonApp\\Services\\TreeBootstrap\\TreeBootstrapService.cs",
+              "RelativeToolTip": "JasonApp\\JasonApp\\Services\\TreeBootstrap\\TreeBootstrapService.cs",
+              "ViewState": "AgIAABIAAAAAAAAAAAAAAHYAAAAmAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-10-20T11:28:46.104Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 2,
+              "Title": "ValueReader.cs",
+              "DocumentMoniker": "C:\\Users\\VictorFernandezTorre\\Desktop\\Repos\\SCADA_CENTRO_CONTROL-OMIApp-Seeker-.NET\\JasonApp\\JasonApp\\Services\\TreeBootstrap\\ValueReader.cs",
+              "RelativeDocumentMoniker": "JasonApp\\JasonApp\\Services\\TreeBootstrap\\ValueReader.cs",
+              "ToolTip": "C:\\Users\\VictorFernandezTorre\\Desktop\\Repos\\SCADA_CENTRO_CONTROL-OMIApp-Seeker-.NET\\JasonApp\\JasonApp\\Services\\TreeBootstrap\\ValueReader.cs",
+              "RelativeToolTip": "JasonApp\\JasonApp\\Services\\TreeBootstrap\\ValueReader.cs",
+              "ViewState": "AgIAAFUAAAAAAAAAAAAAAA4AAAAVAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-10-20T11:00:37.047Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 5,
+              "Title": "JasonTree.xaml.cs",
+              "DocumentMoniker": "C:\\Users\\VictorFernandezTorre\\Desktop\\Repos\\SCADA_CENTRO_CONTROL-OMIApp-Seeker-.NET\\JasonApp\\JasonApp\\View\\JasonTree.xaml.cs",
+              "RelativeDocumentMoniker": "JasonApp\\JasonApp\\View\\JasonTree.xaml.cs",
+              "ToolTip": "C:\\Users\\VictorFernandezTorre\\Desktop\\Repos\\SCADA_CENTRO_CONTROL-OMIApp-Seeker-.NET\\JasonApp\\JasonApp\\View\\JasonTree.xaml.cs",
+              "RelativeToolTip": "JasonApp\\JasonApp\\View\\JasonTree.xaml.cs",
+              "ViewState": "AgIAAAYAAAAAAAAAAAAqwBEAAABIAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-10-20T10:25:07.75Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 8,
+              "Title": "JasonTree.xaml",
+              "DocumentMoniker": "C:\\Users\\VictorFernandezTorre\\Desktop\\Repos\\SCADA_CENTRO_CONTROL-OMIApp-Seeker-.NET\\JasonApp\\JasonApp\\View\\JasonTree.xaml",
+              "RelativeDocumentMoniker": "JasonApp\\JasonApp\\View\\JasonTree.xaml",
+              "ToolTip": "C:\\Users\\VictorFernandezTorre\\Desktop\\Repos\\SCADA_CENTRO_CONTROL-OMIApp-Seeker-.NET\\JasonApp\\JasonApp\\View\\JasonTree.xaml",
+              "RelativeToolTip": "JasonApp\\JasonApp\\View\\JasonTree.xaml",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003549|",
+              "WhenOpened": "2025-10-20T10:25:03.785Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 4,
+              "Title": "JasonTreeViewModel.cs",
+              "DocumentMoniker": "C:\\Users\\VictorFernandezTorre\\Desktop\\Repos\\SCADA_CENTRO_CONTROL-OMIApp-Seeker-.NET\\JasonApp\\JasonApp\\ViewModel\\JasonTreeViewModel.cs",
+              "RelativeDocumentMoniker": "JasonApp\\JasonApp\\ViewModel\\JasonTreeViewModel.cs",
+              "ToolTip": "C:\\Users\\VictorFernandezTorre\\Desktop\\Repos\\SCADA_CENTRO_CONTROL-OMIApp-Seeker-.NET\\JasonApp\\JasonApp\\ViewModel\\JasonTreeViewModel.cs",
+              "RelativeToolTip": "JasonApp\\JasonApp\\ViewModel\\JasonTreeViewModel.cs",
+              "ViewState": "AgIAAAYAAAAAAAAAAAAAAIcAAAAVAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-10-20T10:11:55.086Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 9,
+              "Title": "JasonResources.xaml",
+              "DocumentMoniker": "C:\\Users\\VictorFernandezTorre\\Desktop\\Repos\\SCADA_CENTRO_CONTROL-OMIApp-Seeker-.NET\\JasonApp\\JasonApp\\Resources\\JasonResources.xaml",
+              "RelativeDocumentMoniker": "JasonApp\\JasonApp\\Resources\\JasonResources.xaml",
+              "ToolTip": "C:\\Users\\VictorFernandezTorre\\Desktop\\Repos\\SCADA_CENTRO_CONTROL-OMIApp-Seeker-.NET\\JasonApp\\JasonApp\\Resources\\JasonResources.xaml",
+              "RelativeToolTip": "JasonApp\\JasonApp\\Resources\\JasonResources.xaml",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003549|",
+              "WhenOpened": "2025-10-20T10:10:40.811Z",
+              "EditorCaption": ""
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
