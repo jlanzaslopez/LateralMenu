@@ -1,0 +1,25 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.14.36310.24 d17.14
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LateralMenu", "LateralMenu.csproj", "{A1BC47C7-381E-40BF-8E41-EDD85D80E579}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{A1BC47C7-381E-40BF-8E41-EDD85D80E579}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A1BC47C7-381E-40BF-8E41-EDD85D80E579}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A1BC47C7-381E-40BF-8E41-EDD85D80E579}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A1BC47C7-381E-40BF-8E41-EDD85D80E579}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {7C2BD0FB-5D5A-4D30-8952-C3691C95454B}
+	EndGlobalSection
+EndGlobal

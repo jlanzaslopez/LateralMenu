@@ -1,0 +1,304 @@
+﻿<UserControl x:Class="LateralMenu.Controls.InstallationsListControl"
+             x:Name="Root"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:models="clr-namespace:LateralMenu.Models"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             mc:Ignorable="d">
+
+    <UserControl.Resources>
+
+        <!-- Colors -->
+        <SolidColorBrush x:Key="OkBrush"          Color="#00CE30"/>
+        <SolidColorBrush x:Key="WarnBrush"        Color="#FFDB59"/>
+        <SolidColorBrush x:Key="AlarmBrush"       Color="#FF3131"/>
+        <SolidColorBrush x:Key="StatusGlyphBrush" Color="#FFFFFFFF"/>
+        <SolidColorBrush x:Key="StarHoverBrush"   Color="#C7CCCD"/>
+        <SolidColorBrush x:Key="StarActiveBrush"  Color="#FFDB59"/>
+        <SolidColorBrush x:Key="SeparatorBrush"   Color="#EDF1F4"/>
+
+        <!-- Collapsible groups: FULL-ROW header toggle; chevron on right -->
+        <GroupStyle x:Key="DefaultGroupStyle" HidesIfEmpty="True">
+            <GroupStyle.ContainerStyle>
+                <Style TargetType="GroupItem">
+                    <Setter Property="Margin" Value="0"/>
+                    <Setter Property="Padding" Value="0"/>
+                    <Setter Property="Template">
+                        <Setter.Value>
+                            <ControlTemplate TargetType="GroupItem">
+                                <Expander IsExpanded="True">
+                                    <Expander.Header>
+                                        <ContentPresenter Content="{TemplateBinding Content}"
+                                                          ContentTemplate="{TemplateBinding ContentTemplate}"/>
+                                    </Expander.Header>
+
+                                    <ItemsPresenter/>
+
+                                    <Expander.Template>
+                                        <ControlTemplate TargetType="Expander">
+                                            <Grid SnapsToDevicePixels="True">
+                                                <Grid.RowDefinitions>
+                                                    <RowDefinition Height="30"/>
+                                                    <RowDefinition Height="Auto"/>
+                                                </Grid.RowDefinitions>
+
+                                                <ToggleButton x:Name="PART_GroupHeaderToggle"
+                                                              Grid.Row="0"
+                                                              Background="#EDF1F3"
+                                                              BorderThickness="0"
+                                                              Focusable="False"
+                                                              Cursor="Hand"
+                                                              IsChecked="{Binding IsExpanded, RelativeSource={RelativeSource TemplatedParent}, Mode=TwoWay}"
+                                                              Content="{TemplateBinding Header}"
+                                                              ContentTemplate="{TemplateBinding HeaderTemplate}"
+                                                              Loaded="OnHeaderToggleLoaded"
+                                                              Checked="OnHeaderChecked"
+                                                              Unchecked="OnHeaderUnchecked">
+                                                    <ToggleButton.Template>
+                                                        <ControlTemplate TargetType="ToggleButton">
+                                                            <Border Background="{TemplateBinding Background}">
+                                                                <Grid>
+                                                                    <Grid.ColumnDefinitions>
+                                                                        <ColumnDefinition/>
+                                                                        <ColumnDefinition Width="36"/>
+                                                                    </Grid.ColumnDefinitions>
+
+                                                                    <ContentPresenter Grid.Column="0"
+                                                                                      Margin="8,0"
+                                                                                      VerticalAlignment="Center"/>
+
+                                                                    <!-- Chevron -->
+                                                                    <Grid Grid.Column="1"
+                                                                          HorizontalAlignment="Center"
+                                                                          VerticalAlignment="Center">
+                                                                        <Path x:Name="PART_ChevronPath"
+                                                                              Width="16" Height="16"
+                                                                              Fill="#C7CCCD"
+                                                                              Stretch="Uniform"
+                                                                              RenderTransformOrigin="0.5,0.5"
+                                                                              Data="M 44.679 46.858 L 33.776 33.634 L 55.583 33.634 L 44.679 46.858 Z M 44.679 18.872 C 33.979 18.872 25.305 27.546 25.305 38.246 C 25.305 48.946 33.979 57.62 44.679 57.62 C 55.379 57.62 64.053 48.946 64.053 38.246 C 64.053 27.546 55.379 18.872 44.679 18.872 Z">
+                                                                            <Path.RenderTransform>
+                                                                                <RotateTransform x:Name="PART_ChevronRT" Angle="0"/>
+                                                                            </Path.RenderTransform>
+                                                                        </Path>
+                                                                    </Grid>
+                                                                </Grid>
+                                                            </Border>
+                                                            <ControlTemplate.Triggers>
+                                                                <Trigger Property="IsMouseOver" Value="True">
+                                                                    <Setter TargetName="PART_ChevronPath" Property="Fill" Value="#7E8283"/>
+                                                                </Trigger>
+                                                            </ControlTemplate.Triggers>
+                                                        </ControlTemplate>
+                                                    </ToggleButton.Template>
+                                                </ToggleButton>
+
+                                                <Border Grid.Row="1" Background="Transparent">
+                                                    <ContentPresenter x:Name="ExpandSite" ContentSource="Content"/>
+                                                </Border>
+                                            </Grid>
+
+                                            <ControlTemplate.Triggers>
+                                                <Trigger Property="IsExpanded" Value="False">
+                                                    <Setter TargetName="ExpandSite" Property="Visibility" Value="Collapsed"/>
+                                                </Trigger>
+                                            </ControlTemplate.Triggers>
+                                        </ControlTemplate>
+                                    </Expander.Template>
+                                </Expander>
+                            </ControlTemplate>
+                        </Setter.Value>
+                    </Setter>
+                </Style>
+            </GroupStyle.ContainerStyle>
+
+            <GroupStyle.HeaderTemplate>
+                <DataTemplate>
+                    <TextBlock VerticalAlignment="Center" FontWeight="SemiBold">
+                        <TextBlock.Text>
+                            <MultiBinding StringFormat="{}{0} ({1})">
+                                <Binding Path="Name"/>
+                                <Binding Path="ItemCount"/>
+                            </MultiBinding>
+                        </TextBlock.Text>
+                    </TextBlock>
+                </DataTemplate>
+            </GroupStyle.HeaderTemplate>
+
+            <GroupStyle.Panel>
+                <ItemsPanelTemplate>
+                    <VirtualizingStackPanel/>
+                </ItemsPanelTemplate>
+            </GroupStyle.Panel>
+        </GroupStyle>
+
+        <!-- Row (28 | * | * | 28) with fast tooltip -->
+        <DataTemplate x:Key="RowTemplate">
+            <Grid ToolTipService.InitialShowDelay="150"
+                  ToolTipService.BetweenShowDelay="50"
+                  ToolTipService.ShowDuration="8000">
+                <Grid.ToolTip>
+                    <TextBlock>
+                        <TextBlock.Text>
+                            <MultiBinding StringFormat="{}{0} - {1}">
+                                <Binding Path="Title"/>
+                                <Binding Path="ParentTitle"/>
+                            </MultiBinding>
+                        </TextBlock.Text>
+                    </TextBlock>
+                </Grid.ToolTip>
+
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="28"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="28"/>
+                </Grid.ColumnDefinitions>
+
+                <!-- STATUS ICON -->
+                <Grid Grid.Column="0" HorizontalAlignment="Center" VerticalAlignment="Center">
+                    <!-- Back layer -->
+                    <Path Width="16" Height="16" Stretch="Uniform">
+                        <Path.Style>
+                            <Style TargetType="Path">
+                                <Setter Property="Data" Value="{Binding ElementName=Root, Path=StatusBackIconData}"/>
+                                <Setter Property="Fill" Value="{StaticResource OkBrush}"/>
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding AlarmState}" Value="{x:Static models:AlarmState.Warning}">
+                                        <Setter Property="Fill" Value="{StaticResource WarnBrush}"/>
+                                    </DataTrigger>
+                                    <DataTrigger Binding="{Binding AlarmState}" Value="{x:Static models:AlarmState.Alarm}">
+                                        <Setter Property="Fill" Value="{StaticResource AlarmBrush}"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Path.Style>
+                    </Path>
+
+                    <!-- Front glyph -->
+                    <Path Width="10" Height="10" Stretch="Uniform" Fill="{StaticResource StatusGlyphBrush}">
+                        <Path.Style>
+                            <Style TargetType="Path">
+                                <Setter Property="Data" Value="{Binding ElementName=Root, Path=StatusOkIconData}"/>
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding AlarmState}" Value="{x:Static models:AlarmState.Warning}">
+                                        <Setter Property="Data" Value="{Binding ElementName=Root, Path=StatusWarningIconData}"/>
+                                    </DataTrigger>
+                                    <DataTrigger Binding="{Binding AlarmState}" Value="{x:Static models:AlarmState.Alarm}">
+                                        <Setter Property="Data" Value="{Binding ElementName=Root, Path=StatusAlarmIconData}"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Path.Style>
+                    </Path>
+                </Grid>
+
+                <!-- TITLE -->
+                <TextBlock Grid.Column="1"
+                           Text="{Binding Title}"
+                           VerticalAlignment="Center"
+                           TextTrimming="CharacterEllipsis">
+                    <TextBlock.Style>
+                        <Style TargetType="TextBlock">
+                            <Setter Property="Grid.ColumnSpan" Value="1"/>
+                            <Setter Property="Margin" Value="0"/>
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding ElementName=Root, Path=ShowParentTitle}" Value="False">
+                                    <Setter Property="Grid.ColumnSpan" Value="2"/>
+                                    <Setter Property="Margin" Value="0"/>
+                                </DataTrigger>
+                                <DataTrigger Binding="{Binding ElementName=Root, Path=ShowParentTitle}" Value="True">
+                                    <Setter Property="Margin" Value="0,0,12,0"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </TextBlock.Style>
+                </TextBlock>
+
+                <!-- PARENT TITLE (right-justified) -->
+                <TextBlock Grid.Column="2"
+                           Text="{Binding ParentTitle}"
+                           VerticalAlignment="Center"
+                           HorizontalAlignment="Stretch"
+                           TextAlignment="Right"
+                           TextTrimming="CharacterEllipsis">
+                    <TextBlock.Style>
+                        <Style TargetType="TextBlock">
+                            <Setter Property="Visibility" Value="Collapsed"/>
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding ElementName=Root, Path=ShowParentTitle}" Value="True">
+                                    <Setter Property="Visibility" Value="Visible"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </TextBlock.Style>
+                </TextBlock>
+
+                <!-- FAVORITE -->
+                <Path Grid.Column="3"
+                      Width="16" Height="16" Stretch="Uniform"
+                      Cursor="Hand"
+                      Data="{Binding ElementName=Root, Path=FavoriteIconData}"
+                      MouseLeftButtonUp="OnFavoriteIconClick">
+                    <Path.Style>
+                        <Style TargetType="Path">
+                            <Setter Property="Opacity" Value="0"/>
+                            <Setter Property="Fill" Value="Transparent"/>
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding IsFavorite}" Value="True">
+                                    <Setter Property="Opacity" Value="1"/>
+                                    <Setter Property="Fill" Value="{StaticResource StarActiveBrush}"/>
+                                </DataTrigger>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter Property="Opacity" Value="1"/>
+                                    <Setter Property="Fill" Value="{StaticResource StarHoverBrush}"/>
+                                </Trigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Path.Style>
+                </Path>
+            </Grid>
+        </DataTemplate>
+    </UserControl.Resources>
+
+    <!-- List -->
+    <ListView x:Name="PART_List"
+              ItemsSource="{Binding _InternalItems, ElementName=Root}"
+              MouseDoubleClick="OnListMouseDoubleClick"
+              SelectionChanged="OnSelectionChangedClear"
+              HorizontalAlignment="Stretch"
+              VerticalAlignment="Stretch"
+              HorizontalContentAlignment="Stretch"
+              BorderThickness="0"
+              Background="Transparent"
+              Padding="0"
+              SnapsToDevicePixels="True"
+              ScrollViewer.CanContentScroll="True"
+              ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+              ScrollViewer.VerticalScrollBarVisibility="Auto"
+              VirtualizingPanel.IsVirtualizing="True"
+              VirtualizingPanel.VirtualizationMode="Recycling">
+
+        <ListView.ItemContainerStyle>
+            <Style TargetType="ListViewItem">
+                <Setter Property="Height" Value="30"/>
+                <Setter Property="Margin" Value="0"/>
+                <Setter Property="Padding" Value="0"/>
+                <Setter Property="Focusable" Value="False"/>
+                <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+                <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+                <Setter Property="BorderBrush" Value="{StaticResource SeparatorBrush}"/>
+                <Setter Property="BorderThickness" Value="0,0,0,1"/>
+            </Style>
+        </ListView.ItemContainerStyle>
+
+        <ListView.ItemTemplate>
+            <DataTemplate>
+                <ContentPresenter ContentTemplate="{StaticResource RowTemplate}"/>
+            </DataTemplate>
+        </ListView.ItemTemplate>
+
+        <!-- GroupStyle injected from code when GroupByValue = true -->
+    </ListView>
+</UserControl>

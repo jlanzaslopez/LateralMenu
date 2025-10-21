@@ -1,0 +1,55 @@
+# --- Visual Studio / .NET ---
+.vs/
+*.user
+*.rsuser
+*.suo
+*.userosscache
+*.sln.docstates
+
+# Build outputs
+bin/
+obj/
+[Bb]uild/
+[Ll]og/
+[Tt]est[Rr]esults/
+*.ipch
+*.aps
+*.ncb
+*.opendb
+*.tlog
+*.pch
+*.obj
+*.log
+
+# NuGet
+*.nupkg
+*.snupkg
+.nuget/
+packages/
+# (Si usas PackageReference no se baja a /packages/, igual deja la regla por si acaso)
+
+# Rider / VS Code / otros IDEs
+.idea/
+.vscode/
+*.code-workspace
+
+# Publishes / artifacts
+artifacts/
+publish/
+*.Publish.xml
+
+# ReSharper / análisis
+_ReSharper*/
+*.[Rr]e[Ss]harper
+*.DotSettings.user
+
+# Otros comunes
+*.cache
+*.tmp
+*.temp
+*.pid
+*.mdb
+*.db
+Thumbs.db
+ehthumbs.db
+Desktop.ini
