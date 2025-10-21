@@ -32,6 +32,17 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="ArchestrA.Client.Navigation">
+      <HintPath>..\..\..\..\..\..\Program Files (x86)\ArchestrA\Framework\AcfSdk\Libs\ArchestrA.Client.Navigation.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="ArchestrA.Client.RuntimeData">
+      <HintPath>..\..\..\..\..\..\Program Files (x86)\ArchestrA\Framework\AcfSdk\Libs\ArchestrA.Client.RuntimeData.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="ArchestrA.Diagnostics.LoggerClient">
+      <HintPath>..\..\..\..\..\..\Program Files (x86)\ArchestrA\Framework\AcfSdk\SharedLibs\ArchestrA.Diagnostics.LoggerClient.dll</HintPath>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Data" />
     <Reference Include="System.Xml" />
@@ -48,6 +59,11 @@
     <Reference Include="PresentationFramework" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Logger.cs" />
+    <Compile Include="Services\ITreeBootstrapService.cs" />
+    <Compile Include="Services\TreeBootstrapService.cs" />
+    <Compile Include="Services\ValueReader.cs" />
+    <Compile Include="ViewModels\LateralMenuViewModel.cs" />
     <Page Include="Controls\InstallationsListControl.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
@@ -88,8 +104,6 @@
       <LastGenOutput>Settings.Designer.cs</LastGenOutput>
     </None>
   </ItemGroup>
-  <ItemGroup>
-    <Folder Include="Services\" />
-  </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>
