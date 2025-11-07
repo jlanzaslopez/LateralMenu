@@ -332,6 +332,11 @@ namespace LateralMenu
                 ShowParentTitle = false;
                 FilteringEnabled = true;
             }
+
+            ApplyHostPropsToChild();
+
+            var list = ListControl;
+            list?.ForceRebindAndRefresh();
         }
 
         // =============== DP Change Handlers ===============
