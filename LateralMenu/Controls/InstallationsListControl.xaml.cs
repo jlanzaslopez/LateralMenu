@@ -33,6 +33,15 @@ namespace LateralMenu.Controls
             };
         }
 
+        public void ForceRebindAndRefresh()
+        {
+            LogInfo(() => "InstallationsListControl.ForceRebindAndRefresh() → RebindAndRefresh()");
+            RebindAndRefresh();
+        }
+
+        public event EventHandler<string> FilterValuesChanged;
+        public event EventHandler<int> ItemCountChanged;
+
         #region ===== Logging flag & helpers =====
         public static readonly DependencyProperty EnableLogsProperty =
             DependencyProperty.Register(nameof(EnableLogs), typeof(bool),
@@ -257,24 +266,66 @@ namespace LateralMenu.Controls
         private void RebindAndRefresh()
         {
             // 1) Cargar ItemsSource base
-            IEnumerable<TreeNode> baseItems = ItemsSource;
+            IEnumerable<TreeNode> sourceItems = ItemsSource;
 
-            // 2) Construir set del filtro seleccionado (normalizado una sola vez por rebind)
+            // 2) Construir CSV de valores disponibles para filtro (antes de aplicar filtro)
+            var availableValuesCsv = BuildAvailableValuesCsv(sourceItems);
+
+            // 3) Construir set del filtro seleccionado (normalizado una sola vez por rebind)
             _filterSelectedSet = BuildSetFromCsv(FilterSelected);
 
-            // 3) Aplicar filtro (reglas: si FilteringEnabled == false OR set vacío => no filtra)
-            if (FilteringEnabled && _filterSelectedSet != null && _filterSelectedSet.Count > 0 && baseItems != null)
+            // 4) Aplicar filtro (reglas: si FilteringEnabled == false OR set vacío => no filtra)
+            IEnumerable<TreeNode> filteredItems = sourceItems;
+            if (FilteringEnabled && _filterSelectedSet != null && _filterSelectedSet.Count > 0 && filteredItems != null)
             {
                 // Filtramos por TreeNode.Value ∈ set
-                baseItems = baseItems.Where(n =>
+                filteredItems = filteredItems.Where(n =>
                     n != null &&
                     !string.IsNullOrWhiteSpace(n.Value) &&
                     _filterSelectedSet.Contains(n.Value.Trim()));
             }
 
-            // 4) Persistir pivot interno y re-aplicar shaping
-            _InternalItems = baseItems?.Where(n => n != null).ToList();
+            // 5) Persistir pivot interno y re-aplicar shaping
+            _InternalItems = filteredItems?.Where(n => n != null).ToList();
             ApplyGroupingAndSorting();
+
+            // 6) Notificar salidas al host (valores únicos + conteo)
+            RaiseFilterValuesChanged(availableValuesCsv);
+            RaiseItemCountChanged(_InternalItems?.Count() ?? 0);
+        }
+
+        private string BuildAvailableValuesCsv(IEnumerable<TreeNode> items)
+        {
+            if (items == null) return string.Empty;
+
+            var set = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            foreach (var node in items)
+            {
+                var value = node?.Value;
+                if (string.IsNullOrWhiteSpace(value)) continue;
+
+                set.Add(value.Trim());
+            }
+
+            if (set.Count == 0) return string.Empty;
+
+            return string.Join(
+                ",",
+                set
+                    .Where(v => !string.IsNullOrWhiteSpace(v))
+                    .OrderBy(v => v, StringComparer.OrdinalIgnoreCase));
+        }
+
+        private void RaiseFilterValuesChanged(string csv)
+        {
+            LogInfo(() => $"List: RaiseFilterValuesChanged → '{csv}'");
+            FilterValuesChanged?.Invoke(this, csv ?? string.Empty);
+        }
+
+        private void RaiseItemCountChanged(int count)
+        {
+            LogInfo(() => $"List: RaiseItemCountChanged → {count}");
+            ItemCountChanged?.Invoke(this, count);
         }
 
 

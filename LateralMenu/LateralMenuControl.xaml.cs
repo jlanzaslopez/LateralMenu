@@ -332,6 +332,11 @@ namespace LateralMenu
                 ShowParentTitle = false;
                 FilteringEnabled = true;
             }
+
+            ApplyHostPropsToChild();
+
+            var list = ListControl;
+            list?.ForceRebindAndRefresh();
         }
 
         // =============== DP Change Handlers ===============
@@ -378,6 +383,12 @@ namespace LateralMenu
 
             list.ItemInvoked -= OnItemInvoked;
             list.ItemInvoked += OnItemInvoked;
+
+            list.FilterValuesChanged -= OnListFilterValuesChanged;
+            list.FilterValuesChanged += OnListFilterValuesChanged;
+
+            list.ItemCountChanged -= OnListItemCountChanged;
+            list.ItemCountChanged += OnListItemCountChanged;
         }
 
         private void OnItemInvoked(object sender, TreeNodeEventArgs e)
@@ -392,6 +403,16 @@ namespace LateralMenu
             {
                 LogError(() => "LateralMenuControl.OnItemInvoked: failed to set Navigation.CurrentPath: " + ex.Message, ex);
             }
+        }
+
+        private void OnListFilterValuesChanged(object sender, string csv)
+        {
+            FilterValues = csv ?? string.Empty;
+        }
+
+        private void OnListItemCountChanged(object sender, int count)
+        {
+            ItemCount = count;
         }
 
         private InstallationsListControl ListControl
