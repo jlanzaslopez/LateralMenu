@@ -265,17 +265,21 @@ namespace LateralMenu.Controls
 
         private void RebindAndRefresh()
         {
-            // 1) Cargar ItemsSource base
-            IEnumerable<TreeNode> sourceItems = ItemsSource;
+            // 1) Cargar ItemsSource base y normalizar lista inicial
+            var sourceItems = ItemsSource;
+            var normalizedItems = sourceItems?.Where(n => n != null).ToList() ?? new List<TreeNode>();
 
             // 2) Construir CSV de valores disponibles para filtro (antes de aplicar filtro)
-            var availableValuesCsv = BuildAvailableValuesCsv(sourceItems);
+            var availableValuesCsv = BuildAvailableValuesCsv(normalizedItems);
 
-            // 3) Construir set del filtro seleccionado (normalizado una sola vez por rebind)
+            // 3) Notificar conteo total sin filtrar
+            RaiseItemCountChanged(normalizedItems.Count);
+
+            // 4) Construir set del filtro seleccionado (normalizado una sola vez por rebind)
             _filterSelectedSet = BuildSetFromCsv(FilterSelected);
 
-            // 4) Aplicar filtro (reglas: si FilteringEnabled == false OR set vacío => no filtra)
-            IEnumerable<TreeNode> filteredItems = sourceItems;
+            // 5) Aplicar filtro (reglas: si FilteringEnabled == false OR set vacío => no filtra)
+            IEnumerable<TreeNode> filteredItems = normalizedItems;
             if (FilteringEnabled && _filterSelectedSet != null && _filterSelectedSet.Count > 0 && filteredItems != null)
             {
                 // Filtramos por TreeNode.Value ∈ set
@@ -285,13 +289,14 @@ namespace LateralMenu.Controls
                     _filterSelectedSet.Contains(n.Value.Trim()));
             }
 
-            // 5) Persistir pivot interno y re-aplicar shaping
-            _InternalItems = filteredItems?.Where(n => n != null).ToList();
+            var filteredList = filteredItems?.Where(n => n != null).ToList();
+
+            // 6) Persistir pivot interno y re-aplicar shaping
+            _InternalItems = filteredList;
             ApplyGroupingAndSorting();
 
-            // 6) Notificar salidas al host (valores únicos + conteo)
+            // 7) Notificar salidas al host (valores únicos)
             RaiseFilterValuesChanged(availableValuesCsv);
-            RaiseItemCountChanged(_InternalItems?.Count() ?? 0);
         }
 
         private string BuildAvailableValuesCsv(IEnumerable<TreeNode> items)
