@@ -147,7 +147,7 @@ namespace LateralMenu
                 nameof(FilterSelected),
                 typeof(string),
                 typeof(LateralMenuControl),
-                new PropertyMetadata(string.Empty /* CSV de valores seleccionados */));
+                new PropertyMetadata(string.Empty /* CSV de valores seleccionados */, OnFilterSelectedChanged));
 
         [Category("Filtering")]
         public string FilterSelected
@@ -333,6 +333,7 @@ namespace LateralMenu
                 FilteringEnabled = true;
             }
 
+            ResetFilterSelection();
             ApplyHostPropsToChild();
 
             var list = ListControl;
@@ -354,6 +355,12 @@ namespace LateralMenu
                 host._bootstrap.AttributeName = newVal;
         }
 
+        private void ResetFilterSelection()
+        {
+            if (!string.Equals(FilterSelected ?? string.Empty, string.Empty, StringComparison.Ordinal))
+                FilterSelected = string.Empty;
+        }
+
         private void ApplyHostPropsToChild()
         {
             var list = ListControl;
@@ -367,7 +374,23 @@ namespace LateralMenu
 
             // === Nuevo: propagamos filtrado ===
             list.FilteringEnabled = FilteringEnabled;
-            list.FilterSelected = FilterSelected;
+            ApplyFilterSelectedToChild(FilterSelected);
+        }
+
+        private static void OnFilterSelectedChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+        {
+            var host = (LateralMenuControl)d;
+            host.ApplyFilterSelectedToChild(e.NewValue as string ?? string.Empty);
+        }
+
+        private void ApplyFilterSelectedToChild(string csv)
+        {
+            var list = ListControl;
+            if (list == null) return;
+
+            var normalized = csv ?? string.Empty;
+            if (!string.Equals(list.FilterSelected ?? string.Empty, normalized, StringComparison.Ordinal))
+                list.FilterSelected = normalized;
         }
 
 
