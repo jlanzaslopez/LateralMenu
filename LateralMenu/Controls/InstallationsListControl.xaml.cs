@@ -33,6 +33,12 @@ namespace LateralMenu.Controls
             };
         }
 
+        public void ForceRebindAndRefresh()
+        {
+            LogInfo(() => "InstallationsListControl.ForceRebindAndRefresh() → RebindAndRefresh()");
+            RebindAndRefresh();
+        }
+
         #region ===== Logging flag & helpers =====
         public static readonly DependencyProperty EnableLogsProperty =
             DependencyProperty.Register(nameof(EnableLogs), typeof(bool),
