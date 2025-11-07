@@ -8,32 +8,37 @@ using System.Threading.Tasks;
 
 namespace LateralMenu.Services
 {
+    /// <summary>
+    /// Servicio de bootstrap/proyección:
+    /// - Lee el value del root (no se pinta) y decide si proyectar HIJOS o NIETOS.
+    /// - Aplica seguridad por roles (vacío/"Unconfigured" => público).
+    /// - Hidrata values de los nodos proyectados.
+    /// - Proyección plana: Roots contiene SOLO los elementos a pintar.
+    /// </summary>
     public interface ITreeBootstrapService
     {
         ObservableCollection<TreeNode> Roots { get; }
 
+        /// <summary>Sufijo de atributo para construir las referencias de valor (p.ej. "TEXT").</summary>
         string AttributeName { get; set; }
-        string SearchableContentType { get; set; }
 
-        /// <summary>Optional one-shot reader delegate. If null, value hydration is skipped.</summary>
+        RootMode LastRootMode { get; set; }
+
+        /// <summary>Delegate opcional para lecturas bulk (DataSubscription). Si es null, se saltan lecturas.</summary>
         Func<DataSubscription, IReadOnlyList<string>, Task<IDictionary<string, object>>> OneShotReaderAsync { get; set; }
 
-        /// <summary>True when Roots and the internal path index are ready.</summary>
+        /// <summary>Indica si hay datos proyectados en Roots.</summary>
         bool IsTreeLoaded { get; }
 
-        /// <summary>Populate only the subtree under startPath. merge=false replaces Roots; merge=true accumulates.</summary>
-        void LoadTreeFromPath(string startPath, bool merge = false);
+        /// <summary>
+        /// 1) Obtiene root por path y lee su value.
+        /// 2) Si value == "Sistema": proyecta NIETOS (saltando hijos no visibles).
+        ///    Si no: proyecta HIJOS.
+        /// 3) Hidrata los values de Roots.
+        /// </summary>
+        Task LoadAndProject(string startPath, string userRolesCsv, DataSubscription subscription);
 
-        /// <summary>Populate only the subtree under startItem. merge=false replaces Roots; merge=true accumulates.</summary>
-        void LoadTreeFromItem(NavigationItem startItem, bool merge = false);
-
-        /// <summary>Fast O(1) lookup of an already-built node by its exact path.</summary>
-        bool TryGetNodeByPath(string path, out TreeNode node);
-
-        /// <summary>One-shot value hydration for prepared references.</summary>
-        Task BootstrapValuesAsync(DataSubscription subscription);
-
-        /// <summary>Clear tree and all internal maps/indexes.</summary>
+        /// <summary>Vacía Roots y libera recursos (Dispose de nodos) si aplica.</summary>
         void Clear();
     }
 }

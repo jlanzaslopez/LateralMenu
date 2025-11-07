@@ -177,7 +177,7 @@
                     </Path>
 
                     <!-- Front glyph -->
-                    <Path Width="10" Height="10" Stretch="Uniform" Fill="{StaticResource StatusGlyphBrush}">
+                    <Path Width="10" Height="10" Stretch="Uniform" HorizontalAlignment="Center" VerticalAlignment="Center" Fill="{StaticResource StatusGlyphBrush}">
                         <Path.Style>
                             <Style TargetType="Path">
                                 <Setter Property="Data" Value="{Binding ElementName=Root, Path=StatusOkIconData}"/>
@@ -235,29 +235,14 @@
                     </TextBlock.Style>
                 </TextBlock>
 
-                <!-- FAVORITE -->
-                <Path Grid.Column="3"
-                      Width="16" Height="16" Stretch="Uniform"
-                      Cursor="Hand"
-                      Data="{Binding ElementName=Root, Path=FavoriteIconData}"
-                      MouseLeftButtonUp="OnFavoriteIconClick">
-                    <Path.Style>
-                        <Style TargetType="Path">
-                            <Setter Property="Opacity" Value="0"/>
-                            <Setter Property="Fill" Value="Transparent"/>
-                            <Style.Triggers>
-                                <DataTrigger Binding="{Binding IsFavorite}" Value="True">
-                                    <Setter Property="Opacity" Value="1"/>
-                                    <Setter Property="Fill" Value="{StaticResource StarActiveBrush}"/>
-                                </DataTrigger>
-                                <Trigger Property="IsMouseOver" Value="True">
-                                    <Setter Property="Opacity" Value="1"/>
-                                    <Setter Property="Fill" Value="{StaticResource StarHoverBrush}"/>
-                                </Trigger>
-                            </Style.Triggers>
-                        </Style>
-                    </Path.Style>
-                </Path>
+
+                <!-- FAVORITE (placeholder: mantiene el hueco de 28px sin lógica) -->
+                <Border Grid.Column="3"
+                        Width="16" Height="16"
+                        HorizontalAlignment="Center"
+                        VerticalAlignment="Center"
+                        Background="Transparent"
+                        IsHitTestVisible="False"/>
             </Grid>
         </DataTemplate>
     </UserControl.Resources>

@@ -1,0 +1,16 @@
+﻿<?xml version="1.0"?>
+<AppManifest DesignTimeVisible="false" AppVersion="1.0.0">
+	<Filters>
+		<Control ControlFullName="LateralMenu.LateralMenuControl" AssemblyName="LateralMenu">
+			<Property Name="Foreground"/>
+			<Property Name="Background"/>
+			<Property Name="FontSize"/>
+			<Property Name="FontFamily"/>
+			<Property Name="TagSuffix"/>
+			<Property Name="EnableLogs"/>
+			<Property Name="FilterValues"/>
+			<Property Name="FilterSelected"/>
+			<Property Name="ItemCount"/>
+		</Control>
+	</Filters>
+</AppManifest>

@@ -12,6 +12,28 @@ namespace LateralMenu.Services
     /// </summary>
     internal static class ValueReader
     {
+        // ===== Logging control =====
+        public static bool EnableLogs { get; set; } = false;
+
+        private static void LogInfo(Func<string> f)
+        {
+            if (EnableLogs && f != null)
+                Logger.LogInfo(f);
+        }
+
+        private static void LogWarn(Func<string> f)
+        {
+            if (EnableLogs && f != null)
+                Logger.LogWarning(f);
+        }
+
+        private static void LogError(Func<string> f, Exception ex = null)
+        {
+            if (EnableLogs && f != null)
+                Logger.LogError(f, ex);
+        }
+
+        // ===== Main method =====
         public static async Task<IDictionary<string, object>> ReadBulkAsync(
             DataSubscription subscription,
             IReadOnlyList<string> references)
@@ -20,9 +42,11 @@ namespace LateralMenu.Services
 
             if (subscription == null || references == null || references.Count == 0)
             {
-                Logger.LogInfo(() => "ValueReader.ReadBulkAsync: nothing to read (null subscription or empty references).");
+                LogInfo(() => "ValueReader.ReadBulkAsync: nothing to read (null subscription or empty references).");
                 return result;
             }
+
+            LogInfo(() => $"ValueReader.ReadBulkAsync: BEGIN read ({references.Count} refs). Preview=[{string.Join(", ", references.Count > 5 ? references.SubList(0, 5) : references)}{(references.Count > 5 ? ", ..." : "")}]");
 
             // Build DataReferenceSource[] from reference strings
             var sources = new DataReferenceSource[references.Count];
@@ -32,22 +56,24 @@ namespace LateralMenu.Services
             VTQ[] vtqs;
             try
             {
+                LogInfo(() => "ValueReader.ReadBulkAsync: invoking ReadOnceAsync...");
                 vtqs = await subscription.ReadOnceAsync(sources).ConfigureAwait(false);
             }
             catch (Exception ex)
             {
-                Logger.LogError(() => $"ValueReader.ReadBulkAsync: ReadOnceAsync threw: {ex.Message}", ex);
+                LogError(() => $"ValueReader.ReadBulkAsync: ReadOnceAsync threw: {ex.Message}", ex);
                 return result;
             }
 
             if (vtqs == null)
             {
-                Logger.LogWarning(() => "ValueReader.ReadBulkAsync: ReadOnceAsync returned null VTQ array.");
+                LogWarn(() => "ValueReader.ReadBulkAsync: ReadOnceAsync returned null VTQ array.");
                 return result;
             }
 
             // Map by index (OMI returns VTQs in the same order as the sources array)
             int n = Math.Min(references.Count, vtqs.Length);
+            int nulls = 0;
             for (int i = 0; i < n; i++)
             {
                 string text = null;
@@ -65,19 +91,26 @@ namespace LateralMenu.Services
                     // Be defensive; leave text as null on any unexpected shape
                 }
 
+                if (text == null) nulls++;
                 result[references[i]] = text;
             }
 
             if (vtqs.Length != references.Count)
-            {
-                Logger.LogWarning(() => $"ValueReader.ReadBulkAsync: VTQ length ({vtqs.Length}) != refs length ({references.Count}). Applied {n}.");
-            }
+                LogWarn(() => $"ValueReader.ReadBulkAsync: VTQ length ({vtqs.Length}) != refs length ({references.Count}). Applied {n}.");
             else
-            {
-                Logger.LogInfo(() => $"ValueReader.ReadBulkAsync: applied {n} value(s).");
-            }
+                LogInfo(() => $"ValueReader.ReadBulkAsync: applied {n} value(s), null/empty={nulls}.");
 
+            LogInfo(() => "ValueReader.ReadBulkAsync: END read.");
             return result;
+        }
+
+        // Helper for preview substring of list (compatible with C# 7.3)
+        private static IEnumerable<string> SubList(this IReadOnlyList<string> list, int start, int count)
+        {
+            var res = new List<string>();
+            for (int i = start; i < list.Count && i < start + count; i++)
+                res.Add(list[i]);
+            return res;
         }
     }
 }

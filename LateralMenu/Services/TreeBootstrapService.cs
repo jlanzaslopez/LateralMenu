@@ -1,7 +1,7 @@
-﻿using ArchestrA.Client.Navigation;       // NavigationModel, NavigationItem, FilterOptions, ContentData, NavSearchOptions, SearchLevelOption
+﻿using ArchestrA.Client.Navigation;       // NavigationModel, NavigationItem
 using ArchestrA.Client.RuntimeData;      // DataSubscription
 using ArchestrA.Diagnostics;             // Logger
-using LateralMenu.Models;                   // TreeNode
+using LateralMenu.Models;                // TreeNode
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -12,502 +12,357 @@ using System.Windows.Threading;          // Dispatcher
 
 namespace LateralMenu.Services
 {
-    /// <summary>
-    /// Quiet bootstrapper for OMI navigation trees.
-    /// - Can load a subtree from a path or NavigationItem (replace or merge).
-    /// - Maintains an O(1) path→node index for fast resolution.
-    /// - Optionally prepares Title+TagSuffix references and performs one-shot value hydration.
-    /// - Assigns ParentTitle for ALL nodes (navigation and content).
-    /// </summary>
+    public enum RootMode
+    {
+        None,
+        Ambito,
+        Sistema,
+        Generico
+    }
+
     public sealed class TreeBootstrapService : ITreeBootstrapService
     {
 
-        // TEMP: make value bootstrap path very chatty
-        private const bool VerboseValues = true;
-        private static void LogV(Func<string> msg)
+        // Dispatcher de UI inyectado por el host (LateralMenuControl)
+        public System.Windows.Threading.Dispatcher UIDispatcher { get; set; }
+
+        // ======= Logs =======
+        public bool EnableLogs { get; set; }  // lo setea el control padre
+
+        private void SvcLogInfo(Func<string> f)
         {
-            if (!VerboseValues || msg == null) return;
-            Logger.LogInfo(msg);
+            if (EnableLogs && f != null) Logger.LogInfo(f);
+        }
+        private void SvcLogWarn(Func<string> f)
+        {
+            if (EnableLogs && f != null) Logger.LogWarning(f);
+        }
+        private void SvcLogError(Func<string> f, Exception ex = null)
+        {
+            if (EnableLogs && f != null) Logger.LogError(f, ex);
         }
 
-        // ------------ Public surface ------------
-
+        // ======= Estado público =======
         public ObservableCollection<TreeNode> Roots { get; } = new ObservableCollection<TreeNode>();
-
-        /// <summary>Suffix used to build value references (e.g., "TEXT"). Empty => skip value hydration.</summary>
         public string AttributeName { get; set; } = string.Empty;
-
-        /// <summary>Content type to include per node. Empty => skip content entirely.</summary>
-        public string SearchableContentType { get; set; } = string.Empty;
-
-        /// <summary>Delegate that performs a one-shot bulk read using the OMI DataSubscription.</summary>
         public Func<DataSubscription, IReadOnlyList<string>, Task<IDictionary<string, object>>> OneShotReaderAsync { get; set; }
+        public bool IsTreeLoaded => Roots.Count > 0;
+        public RootMode LastRootMode { get; set; } = RootMode.None;
 
-        /// <summary>True when Roots and the internal path index are ready.</summary>
-        public bool IsTreeLoaded => Roots.Count > 0 && _byPath.Count > 0;
 
-        /// <summary>Populate only the subtree under startPath. merge=false replaces Roots; merge=true accumulates.</summary>
-        public void LoadTreeFromPath(string startPath, bool merge = false)
+
+
+        // ======= Carga / Proyección =======
+        public async Task LoadAndProject(string startPath, string userRolesCsv, DataSubscription subscription)
         {
+            // PRE: limpiar estado UI en el hilo correcto
+            OnUi(() =>
+            {
+                try { DisposeRoots(); } catch { /* best effort */ }
+                Roots.Clear();
+                LastRootMode = RootMode.None;
+            });
+
             if (string.IsNullOrWhiteSpace(startPath))
             {
-                Logger.LogWarning(() => "TreeBootstrapService.LoadTreeFromPath: startPath is null/empty.");
-                if (!merge) Clear();
+                Logger.LogWarning(() => "LoadAndProject: startPath vacío.");
                 return;
             }
 
             var model = NavigationModel.ViewAppNavigationModel;
             if (model == null)
             {
-                Logger.LogWarning(() => "TreeBootstrapService.LoadTreeFromPath: NavigationModel.ViewAppNavigationModel is NULL.");
-                if (!merge) Clear();
+                Logger.LogWarning(() => "LoadAndProject: NavigationModel.ViewAppNavigationModel es NULL.");
                 return;
             }
 
-            // NEW: prefer SDK lookup; fall back to our DFS only if needed
-            var item = model.GetItemBypath(startPath) ?? FindItemByPath(model, startPath);
-            if (item == null)
+            var rootItem = model.GetItemBypath(startPath);
+            if (rootItem == null)
             {
-                Logger.LogWarning(() => $"TreeBootstrapService.LoadTreeFromPath: path not found: '{startPath}'.");
-                if (!merge) Clear();
+                Logger.LogWarning(() => $"LoadAndProject: path no encontrado: '{startPath}'.");
                 return;
             }
 
-            LoadTreeFromItem(item, merge);
-        }
+            // 1) Decidir modo según value del root
+            string rootValue = await TryReadSingleValueAsync(subscription, rootItem?.Name).ConfigureAwait(false);
+            var v = (rootValue ?? string.Empty).Trim().ToLowerInvariant();
+            if (v == "ámbito" || v == "ambito")
+                LastRootMode = RootMode.Ambito;
+            else if (v == "sistema")
+                LastRootMode = RootMode.Sistema;
+            else
+                LastRootMode = RootMode.Generico;
 
+            bool isSistema = (LastRootMode == RootMode.Sistema);
 
-        /// <summary>Populate only the subtree under startItem. merge=false replaces Roots; merge=true accumulates.</summary>
-        public void LoadTreeFromItem(NavigationItem startItem, bool merge = false)
-        {
-            if (startItem == null)
+            // 2) Roles usuario
+            var userRoles = ToRoleSet(userRolesCsv);
+
+            // 3) Construcción en memoria (SIN tocar UI)
+            var built = new List<TreeNode>();
+
+            if (!isSistema)
             {
-                Logger.LogWarning(() => "TreeBootstrapService.LoadTreeFromItem: startItem is NULL.");
-                if (!merge) Clear();
-                return;
-            }
-
-            var model = NavigationModel.ViewAppNavigationModel;
-            if (model == null)
-            {
-                Logger.LogWarning(() => "TreeBootstrapService.LoadTreeFromItem: NavigationModel.ViewAppNavigationModel is NULL.");
-                if (!merge) Clear();
-                return;
-            }
-
-            if (!merge)
-            {
-                Roots.Clear();
-                _byPath.Clear();
-                _sources.Clear();
-                _refToNode.Clear();
-            }
-
-            // Build filter: empty ContentTypes => skip content queries entirely
-            var filter = new FilterOptions
-            {
-                NavSearchOptions = NavSearchOptions.StartNode,
-                SearchLevelOptions = SearchLevelOption.OneLevel,
-                ContentTypes = string.IsNullOrWhiteSpace(SearchableContentType)
-                    ? new List<string>()       // skip content
-                    : new List<string> { SearchableContentType }
-            };
-
-            // Build subtree; root has no parent title
-            var rootNode = ConvertNode(startItem, model, filter, parentObjectPath: null, parentTitle: null);
-            if (rootNode != null)
-            {
-                Roots.Add(rootNode);
-                IndexSubtree(rootNode);
-            }
-
-            // Refresh value reference maps (quiet)
-            RebuildSources();
-        }
-
-        /// <summary>Fast O(1) lookup of an already-built node by its exact path.</summary>
-        public bool TryGetNodeByPath(string path, out TreeNode node)
-        {
-            node = null;
-            if (string.IsNullOrWhiteSpace(path)) return false;
-            return _byPath.TryGetValue(NormalizePath(path), out node);
-        }
-
-        /// <summary>
-        /// One-shot value hydration. Reads values for prepared references and writes them to nodes.
-        /// Quiet mode: returns silently on benign skip conditions.
-        /// </summary>
-        public async Task BootstrapValuesAsync(DataSubscription subscription)
-        {
-            // Verbose entry
-            LogV(() => $"[Values] BEGIN: AttributeName='{AttributeName ?? ""}', SourcesPrepared={_sources.Count}, ReaderSet={(OneShotReaderAsync != null)}.");
-
-            if (subscription == null)
-            {
-                LogV(() => "[Values] SKIP: DataSubscription is NULL.");
-                return;
-            }
-            if (string.IsNullOrWhiteSpace(AttributeName))
-            {
-                LogV(() => "[Values] SKIP: AttributeName (TagSuffix) is empty.");
-                return;
-            }
-
-            if (_sources.Count == 0)
-            {
-                LogV(() => "[Values] RebuildSources (initial)...");
-                RebuildSources();
-                LogV(() => $"[Values] RebuildSources done: prepared={_sources.Count}.");
-            }
-
-            if (_sources.Count == 0)
-            {
-                LogV(() => "[Values] SKIP: No prepared references.");
-                return;
-            }
-
-            var reader = OneShotReaderAsync;
-            if (reader == null)
-            {
-                LogV(() => "[Values] SKIP: OneShotReaderAsync not set.");
-                return;
-            }
-
-            // Sample first few refs
-            var preview = string.Join(", ", _sources.Take(10).Select(s => s.Reference));
-            LogV(() => $"[Values] Reading refs: count={_sources.Count}, preview=[{preview}{(_sources.Count > 10 ? ", ..." : "")}]");
-
-            IDictionary<string, object> dict;
-            try
-            {
-                var refs = _sources.Select(s => s.Reference).ToList().AsReadOnly();
-                var sw = System.Diagnostics.Stopwatch.StartNew();
-                dict = await reader(subscription, refs).ConfigureAwait(false);
-                sw.Stop();
-
-                if (dict == null)
+                if (rootItem.HasItems && rootItem.Items != null)
                 {
-                    LogV(() => "[Values] Reader returned NULL dictionary.");
-                    return;
-                }
-
-                LogV(() => $"[Values] Reader returned {dict.Count} key(s) in {sw.ElapsedMilliseconds} ms.");
-            }
-            catch (Exception ex)
-            {
-                Logger.LogError(() => $"TreeBootstrapService.BootstrapValuesAsync: reader threw: {ex.Message}", ex);
-                return;
-            }
-
-            // Apply on UI thread
-            var dispatcher = Application.Current?.Dispatcher;
-            int applied = 0;
-            int missingKeys = 0;
-
-            Action apply = () =>
-            {
-                // Track misses: keys prepared but not present in dict
-                var dictKeys = new HashSet<string>(dict.Keys, StringComparer.Ordinal);
-
-                foreach (var src in _sources)
-                {
-                    if (!dict.TryGetValue(src.Reference, out var val))
+                    foreach (NavigationItem child in rootItem.Items)
                     {
-                        missingKeys++;
-                        continue;
+                        if (child == null) continue;
+                        var nodeRoles = ParseRolesCsv(child.LoggedInUserRoles);
+                        if (!IsVisibleByRoles(nodeRoles, userRoles)) continue;
+
+                        var tn = CreateNode(child, parentTitle: rootItem.Title ?? rootItem.Name, alreadyParsedRoles: nodeRoles);
+                        built.Add(tn);
                     }
-
-                    if (_refToNode.TryGetValue(src.Reference, out var nodes) && nodes != null)
+                }
+            }
+            else
+            {
+                if (rootItem.HasItems && rootItem.Items != null)
+                {
+                    foreach (NavigationItem child in rootItem.Items)
                     {
-                        var text = val != null ? Convert.ToString(val) : null;
-                        for (int i = 0; i < nodes.Count; i++)
+                        if (child == null) continue;
+
+                        var childRoles = ParseRolesCsv(child.LoggedInUserRoles);
+                        if (!IsVisibleByRoles(childRoles, userRoles)) continue;
+
+                        if (!(child.HasItems && child.Items != null)) continue;
+
+                        foreach (NavigationItem gc in child.Items)
                         {
-                            nodes[i].Value = text;
-                            applied++;
+                            if (gc == null) continue;
+                            var gcRoles = ParseRolesCsv(gc.LoggedInUserRoles);
+                            if (!IsVisibleByRoles(gcRoles, userRoles)) continue;
+
+                            var tn = CreateNode(gc, parentTitle: child.Title ?? child.Name, alreadyParsedRoles: gcRoles);
+                            built.Add(tn);
                         }
                     }
                 }
-            };
-
-            if (dispatcher != null && !dispatcher.CheckAccess())
-                await dispatcher.InvokeAsync(apply, DispatcherPriority.Background);
-            else
-                apply();
-
-            LogV(() => $"[Values] APPLY DONE: nodesUpdated={applied}, missingRefs={missingKeys}.");
-            LogV(() => "[Values] END");
-        }
-
-
-        /// <summary>Clear tree and all maps.</summary>
-        public void Clear()
-        {
-            Roots.Clear();
-            _byPath.Clear();
-            _sources.Clear();
-            _refToNode.Clear();
-        }
-
-        // ------------ Internals (quiet) ------------
-
-        private readonly Dictionary<string, TreeNode> _byPath =
-            new Dictionary<string, TreeNode>(StringComparer.Ordinal); // adjust comparer if paths are case-insensitive
-
-        private readonly List<SourceMap> _sources = new List<SourceMap>();
-        private readonly Dictionary<string, List<TreeNode>> _refToNode =
-            new Dictionary<string, List<TreeNode>>(StringComparer.Ordinal);
-
-        private static string NormalizePath(string path) => path?.Trim() ?? string.Empty;
-
-        private static NavigationItem FindItemByPath(NavigationModel model, string path)
-        {
-            if (model == null || string.IsNullOrWhiteSpace(path)) return null;
-            var norm = NormalizePath(path);
-
-            // Direct root match
-            if (model.RootItem != null &&
-                string.Equals(NormalizePath(model.RootItem.Path), norm, StringComparison.Ordinal))
-                return model.RootItem;
-
-            // Scan top-level items
-            var roots = model.Items;
-            if (roots != null)
-            {
-                foreach (NavigationItem ni in roots)
-                {
-                    var found = DfsFindByPath(ni, norm);
-                    if (found != null) return found;
-                }
             }
 
-            // Fallback: DFS under RootItem
-            return model.RootItem != null ? DfsFindByPath(model.RootItem, norm) : null;
+            Logger.LogInfo(() => $"Bootstrap: Projection done. BuiltCount={built.Count}, mode={LastRootMode}");
+
+            // 4) Lectura de values (aplica valores con Dispatcher internamente)
+            await ReadValuesForNodesAsync(subscription, built).ConfigureAwait(false);
+
+            // 5) Aplicar a Roots en hilo de UI
+            OnUi(() =>
+            {
+                for (int i = 0; i < built.Count; i++)
+                    Roots.Add(built[i]);
+
+                var prev = string.Join(", ", built.Take(10).Select(n => n.Title));
+                Logger.LogInfo(() => $"Bootstrap: Roots applied on UI. Count={Roots.Count}, Preview=[{prev}{(built.Count > 10 ? ", ..." : "")}]");
+            });
         }
 
-        private static NavigationItem DfsFindByPath(NavigationItem start, string normPath)
+        public void Clear()
         {
-            if (start == null) return null;
-            var stack = new Stack<NavigationItem>();
-            stack.Push(start);
-
-            while (stack.Count > 0)
+            OnUi(() =>
             {
-                var cur = stack.Pop();
-                if (cur == null) continue;
+                try { DisposeRoots(); } catch { /* best effort */ }
+                Roots.Clear();
+                LastRootMode = RootMode.None;
+            });
+        }
 
-                if (string.Equals(NormalizePath(cur.Path), normPath, StringComparison.Ordinal))
-                    return cur;
 
-                if (cur.HasItems && cur.Items != null)
+
+        // ---------- Helpers ----------
+        private void OnUi(Action action)
+        {
+            if (action == null) return;
+
+            var disp = UIDispatcher;
+            if (disp != null && !disp.CheckAccess())
+                disp.Invoke(action, System.Windows.Threading.DispatcherPriority.Background);
+            else
+                action();
+        }
+
+
+        private TreeNode CreateNode(NavigationItem item, string parentTitle, IList<string> alreadyParsedRoles)
+        {
+            var title = !string.IsNullOrWhiteSpace(item.Title) ? item.Title : item.Name;
+            var tn = new TreeNode(title, item.Name, item.Path, parentTitle, EnableLogs);
+
+            // Cargar roles del nodo (ya parseados desde NavigationItem.LoggedInUserRoles)
+            if (alreadyParsedRoles != null)
+            {
+                for (int i = 0; i < alreadyParsedRoles.Count; i++)
                 {
-                    for (int i = cur.Items.Count - 1; i >= 0; i--)
-                    {
-                        var child = cur.Items[i];
-                        if (child != null) stack.Push(child);
-                    }
+                    var r = alreadyParsedRoles[i];
+                    if (!string.IsNullOrWhiteSpace(r)) tn.LoggedInUserRoles.Add(r);
                 }
+            }
+            return tn;
+        }
+
+        private static IList<string> ParseRolesCsv(string csv)
+        {
+            var list = new List<string>();
+            if (string.IsNullOrWhiteSpace(csv)) return list;
+
+            var parts = csv.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
+            for (int i = 0; i < parts.Length; i++)
+            {
+                var r = parts[i]?.Trim();
+                if (!string.IsNullOrEmpty(r)) list.Add(r);
+            }
+            return list;
+        }
+
+        private static ISet<string> ToRoleSet(string csv)
+        {
+            var set = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            if (string.IsNullOrWhiteSpace(csv)) return set;
+
+            var parts = csv.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
+            for (int i = 0; i < parts.Length; i++)
+            {
+                var r = parts[i]?.Trim();
+                if (!string.IsNullOrEmpty(r)) set.Add(r);
+            }
+            return set;
+        }
+
+        private static bool IsVisibleByRoles(IList<string> nodeRoles, ISet<string> userRoles)
+        {
+            if (nodeRoles == null || nodeRoles.Count == 0) return true;
+
+            for (int i = 0; i < nodeRoles.Count; i++)
+                if (string.Equals(nodeRoles[i]?.Trim(), "Unconfigured", StringComparison.OrdinalIgnoreCase))
+                    return true;
+
+            if (userRoles == null || userRoles.Count == 0) return false;
+
+            for (int i = 0; i < nodeRoles.Count; i++)
+            {
+                var role = nodeRoles[i];
+                if (string.IsNullOrWhiteSpace(role)) continue;
+                if (userRoles.Contains(role.Trim())) return true;
+            }
+            return false;
+        }
+
+        // Variante que además devuelve el rol que hizo match (para el log)
+        private static bool IsVisibleByRolesWithMatch(IList<string> nodeRoles, ISet<string> userRoles, out string matchedRole)
+        {
+            matchedRole = null;
+
+            if (nodeRoles == null || nodeRoles.Count == 0) return true;
+
+            for (int i = 0; i < nodeRoles.Count; i++)
+                if (string.Equals(nodeRoles[i]?.Trim(), "Unconfigured", StringComparison.OrdinalIgnoreCase))
+                    return true;
+
+            if (userRoles == null || userRoles.Count == 0) return false;
+
+            for (int i = 0; i < nodeRoles.Count; i++)
+            {
+                var role = nodeRoles[i];
+                if (string.IsNullOrWhiteSpace(role)) continue;
+                var r = role.Trim();
+                if (userRoles.Contains(r))
+                {
+                    matchedRole = r;
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        private async Task<string> TryReadSingleValueAsync(DataSubscription subscription, string name)
+        {
+            if (subscription == null || OneShotReaderAsync == null) return null;
+            if (string.IsNullOrWhiteSpace(AttributeName)) return null;
+            if (string.IsNullOrWhiteSpace(name)) return null;
+
+            var suffix = NormalizeSuffix(AttributeName);
+            var reference = BuildReference(name, suffix);
+            if (string.IsNullOrEmpty(reference)) return null;
+
+            try
+            {
+                var dict = await OneShotReaderAsync(subscription, new List<string> { reference }.AsReadOnly()).ConfigureAwait(false);
+                if (dict != null && dict.TryGetValue(reference, out var val))
+                    return val != null ? Convert.ToString(val) : null;
+            }
+            catch (Exception ex)
+            {
+                SvcLogError(() => $"TryReadSingleValueAsync: {ex.Message}", ex);
             }
             return null;
         }
 
-        /// <summary>
-        /// Build a TreeNode from a NavigationItem.
-        /// - Assigns ParentTitle for the current node.
-        /// - Adds content nodes (when enabled) with ParentTitle = owning object's Title.
-        /// - Recurses into navigation children, passing the current node's Title as their ParentTitle.
-        /// </summary>
-        private TreeNode ConvertNode(
-            NavigationItem item,
-            NavigationModel model,
-            FilterOptions filter,
-            string parentObjectPath,
-            string parentTitle)
+        private async Task ReadValuesForNodesAsync(DataSubscription subscription, IEnumerable<TreeNode> nodes)
         {
-            if (item == null) return null;
+            if (subscription == null || OneShotReaderAsync == null) { SvcLogInfo(() => "Bootstrap: Skip ReadValues (subscription/reader null)."); return; }
+            if (string.IsNullOrWhiteSpace(AttributeName)) { SvcLogInfo(() => "Bootstrap: Skip ReadValues (AttributeName empty)."); return; }
+            if (nodes == null) { SvcLogInfo(() => "Bootstrap: Skip ReadValues (nodes null)."); return; }
 
-            string title = !string.IsNullOrWhiteSpace(item.Title) ? item.Title : item.Name;
-            string name = item.Name;
-            string path = item.Path;
+            var suffix = NormalizeSuffix(AttributeName);
+            var list = nodes.Where(n => n != null && !string.IsNullOrWhiteSpace(n.Name)).ToList();
+            if (list.Count == 0) { SvcLogInfo(() => "Bootstrap: Skip ReadValues (no nodes)."); return; }
 
-            var node = new TreeNode
+            var refs = new List<string>(list.Count);
+            for (int i = 0; i < list.Count; i++)
             {
-                Title = title,
-                Name = name,
-                Path = path,
-                IsContent = false,    // navigation object
-                ParentPath = null,
-                ParentTitle = parentTitle
+                var r = BuildReference(list[i].Name, suffix);
+                if (!string.IsNullOrEmpty(r)) refs.Add(r);
+            }
+            if (refs.Count == 0) { SvcLogInfo(() => "Bootstrap: Skip ReadValues (no references)."); return; }
+
+            SvcLogInfo(() => $"Bootstrap: Preparing value refs for Roots (suffix='{(AttributeName ?? "")}'). Count={refs.Count}, preview=[{string.Join(", ", refs.Take(5))}{(refs.Count > 5 ? ", ..." : "")}]");
+
+            IDictionary<string, object> dict;
+            try
+            {
+                dict = await OneShotReaderAsync(subscription, refs.AsReadOnly()).ConfigureAwait(false);
+            }
+            catch (Exception ex)
+            {
+                SvcLogError(() => $"ReadValuesForNodesAsync: {ex.Message}", ex);
+                return;
+            }
+            if (dict == null || dict.Count == 0)
+            {
+                SvcLogWarn(() => "Bootstrap: ReadValues -> dictionary NULL o vacío.");
+                return;
+            }
+
+            int applied = 0, missing = 0;
+
+            var disp = UIDispatcher;
+            Action apply = () =>
+            {
+                for (int i = 0; i < list.Count; i++)
+                {
+                    var tn = list[i];
+                    var reff = BuildReference(tn.Name, suffix);
+                    if (string.IsNullOrEmpty(reff)) { missing++; continue; }
+                    object valObj;
+                    if (!dict.TryGetValue(reff, out valObj)) { missing++; continue; }
+                    tn.Value = valObj != null ? Convert.ToString(valObj) : null;
+                    applied++;
+                }
             };
 
-            // CONTENT (skip if ContentTypes is empty)
-            bool skipContent = (filter?.ContentTypes == null || filter.ContentTypes.Count() == 0);
-            if (!skipContent && node.Items != null)
-            {
-                ContentData[] contents = null;
-                try
-                {
-                    contents = model.GetContentInHierarchy(path, filter);
-                }
-                catch (Exception ex)
-                {
-                    Logger.LogError(() => $"TreeBootstrapService.ConvertNode('{path}'): GetContentInHierarchy threw: {ex.Message}", ex);
-                    contents = null;
-                }
+            if (disp != null && !disp.CheckAccess())
+                await disp.InvokeAsync(apply, System.Windows.Threading.DispatcherPriority.Background);
+            else
+                apply();
 
-                if (contents != null && contents.Length > 0)
-                {
-                    for (int i = 0; i < contents.Length; i++)
-                    {
-                        var c = contents[i];
-                        if (c == null) continue;
-
-                        // Use trailing segment after the last '.' as display title
-                        var rawName = c.ContentName ?? string.Empty;
-                        var lastDot = rawName.LastIndexOf('.');
-                        string cTitle = (lastDot >= 0 && lastDot + 1 < rawName.Length)
-                            ? rawName.Substring(lastDot + 1).Trim()
-                            : rawName.Trim();
-
-                        var contentNode = new TreeNode
-                        {
-                            Title = cTitle,
-                            Path = path,     // content reuses owning object's path
-                            IsContent = true,
-                            ParentPath = path,     // navigate to the owning object
-                            ParentTitle = title     // parent is the current nav node
-                        };
-
-                        node.Items.Add(contentNode);
-                    }
-                }
-            }
-
-            // NAV CHILDREN
-            if (item.HasItems && item.Items != null && node.Items != null)
-            {
-                var nextParentPath = !string.IsNullOrWhiteSpace(path) ? path : parentObjectPath;
-
-                foreach (NavigationItem child in item.Items)
-                {
-                    var childTn = ConvertNode(child, model, filter, nextParentPath, parentTitle: title);
-                    if (childTn != null)
-                        node.Items.Add(childTn);
-                }
-            }
-
-            return node;
+            SvcLogInfo(() => $"Bootstrap: Values applied to Roots. updated={applied}, missingRefs={missing}");
         }
 
-        private void IndexSubtree(TreeNode root)
+        private static string BuildReference(string name, string normalizedSuffix)
         {
-            if (root == null) return;
-
-            var stack = new Stack<TreeNode>();
-            stack.Push(root);
-
-            while (stack.Count > 0)
-            {
-                var n = stack.Pop();
-                if (n == null) continue;
-
-                if (!n.IsContent)
-                {
-                    var key = NormalizePath(n.Path);
-                    if (!string.IsNullOrEmpty(key))
-                        _byPath[key] = n; // merge/replace OK
-                }
-
-                var kids = n.Items;
-                if (kids != null)
-                {
-                    for (int i = kids.Count - 1; i >= 0; i--)
-                    {
-                        var c = kids[i];
-                        if (c != null) stack.Push(c);
-                    }
-                }
-            }
-        }
-
-        // Prepare Title.Suffix references for one-shot hydration (quiet)
-        private void RebuildSources()
-        {
-            _sources.Clear();
-            _refToNode.Clear();
-
-            int traversed = 0;
-            int navigable = 0;
-
-            if (Roots.Count == 0)
-            {
-                LogV(() => "[Values] RebuildSources: no roots.");
-                return;
-            }
-            if (string.IsNullOrWhiteSpace(AttributeName))
-            {
-                LogV(() => "[Values] RebuildSources: AttributeName empty → skip.");
-                return;
-            }
-
-            string suffix = NormalizeSuffix(AttributeName);
-
-            foreach (var node in Flatten(Roots))
-            {
-                traversed++;
-                if (node == null) continue;
-                if (node.IsContent) continue; // content nodes do not produce value refs
-
-                navigable++;
-
-                var reference = BuildReference(node, suffix);
-                if (string.IsNullOrEmpty(reference)) continue;
-
-                _sources.Add(new SourceMap { Node = node, Reference = reference });
-
-                if (!_refToNode.TryGetValue(reference, out var bucket))
-                {
-                    bucket = new List<TreeNode>();
-                    _refToNode[reference] = bucket;
-                }
-                bucket.Add(node);
-            }
-
-            var preview = string.Join(", ", _sources.Take(10).Select(s => s.Reference));
-            LogV(() => $"[Values] RebuildSources: traversed={traversed}, navigable={navigable}, prepared={_sources.Count}, preview=[{preview}{(_sources.Count > 10 ? ", ..." : "")}]");
-        }
-
-
-        private static IEnumerable<TreeNode> Flatten(IEnumerable<TreeNode> roots)
-        {
-            if (roots == null) yield break;
-
-            var stack = new Stack<TreeNode>();
-            foreach (var r in roots)
-                if (r != null) stack.Push(r);
-
-            while (stack.Count > 0)
-            {
-                var n = stack.Pop();
-                yield return n;
-
-                var kids = n.Items;
-                if (kids != null)
-                {
-                    for (int i = kids.Count - 1; i >= 0; i--)
-                    {
-                        var c = kids[i];
-                        if (c != null) stack.Push(c);
-                    }
-                }
-            }
-        }
-
-        private static string BuildReference(TreeNode node, string normalizedSuffix)
-        {
-            if (node == null || node.IsContent) return null;
-            if (string.IsNullOrWhiteSpace(node.Name)) return null;
+            if (string.IsNullOrWhiteSpace(name)) return null;
             if (string.IsNullOrEmpty(normalizedSuffix)) return null;
-            return node.Name + "." + normalizedSuffix;
+            return name + "." + normalizedSuffix;
         }
 
         private static string NormalizeSuffix(string attributeName)
@@ -518,10 +373,12 @@ namespace LateralMenu.Services
             return s;
         }
 
-        private sealed class SourceMap
+        private void DisposeRoots()
         {
-            public TreeNode Node;
-            public string Reference;
+            for (int i = 0; i < Roots.Count; i++)
+            {
+                try { Roots[i]?.Dispose(); } catch { }
+            }
         }
     }
 }

@@ -1,8 +1,9 @@
 ﻿using LateralMenu.Models;
+using ArchestrA.Diagnostics;              // Logger
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
-using System.Linq;                         // <-- for SelectMany
+using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;  // ToggleButton
@@ -20,34 +21,61 @@ namespace LateralMenu.Controls
         public TreeNode Node { get; }
     }
 
-    // New depth enum
-    public enum ListDepthMode
-    {
-        FirstLevel = 0,       // ParentNode.Items (default)
-        TwoLevelsFlat = 1    // ParentNode.Items.SelectMany(c => c.Items)
-    }
-
     public partial class InstallationsListControl : UserControl
     {
         public InstallationsListControl()
         {
             InitializeComponent();
-            Loaded += (_, __) => RebindAndRefresh();
+            Loaded += (_, __) =>
+            {
+                LogInfo(() => "InstallationsListControl.Loaded → RebindAndRefresh()");
+                RebindAndRefresh();
+            };
         }
+
+        #region ===== Logging flag & helpers =====
+        public static readonly DependencyProperty EnableLogsProperty =
+            DependencyProperty.Register(nameof(EnableLogs), typeof(bool),
+                typeof(InstallationsListControl), new PropertyMetadata(false));
+
+        public bool EnableLogs
+        {
+            get => (bool)GetValue(EnableLogsProperty);
+            set => SetValue(EnableLogsProperty, value);
+        }
+
+        private void LogInfo(Func<string> f)
+        {
+            if (EnableLogs && f != null) Logger.LogInfo(f);
+        }
+
+        // Cache local de selección ya normalizada durante el último rebind
+        private HashSet<string> _filterSelectedSet;
+
+        // Normaliza CSV a conjunto minúsculas, sin vacíos.
+        private static HashSet<string> BuildSetFromCsv(string csv)
+        {
+            var set = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            if (string.IsNullOrWhiteSpace(csv)) return set;
+
+            var parts = csv.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
+            for (int i = 0; i < parts.Length; i++)
+            {
+                var s = parts[i];
+                if (s == null) continue;
+                s = s.Trim();
+                if (s.Length == 0) continue;
+                set.Add(s);
+            }
+            return set;
+        }
+
+
+        #endregion
 
         #region ===== PUBLIC API (Inputs / Outputs) =====
 
-        // Data source
-        public TreeNode ParentNode
-        {
-            get => (TreeNode)GetValue(ParentNodeProperty);
-            set => SetValue(ParentNodeProperty, value);
-        }
-        public static readonly DependencyProperty ParentNodeProperty =
-            DependencyProperty.Register(nameof(ParentNode), typeof(TreeNode),
-                typeof(InstallationsListControl),
-                new PropertyMetadata(null, OnDataSourceChanged));
-
+        // Fuente de datos principal: lista plana de TreeNode
         public IEnumerable<TreeNode> ItemsSource
         {
             get => (IEnumerable<TreeNode>)GetValue(ItemsSourceProperty);
@@ -58,7 +86,7 @@ namespace LateralMenu.Controls
                 typeof(InstallationsListControl),
                 new PropertyMetadata(null, OnDataSourceChanged));
 
-        // Behavior toggles
+        // Mostrar o no el ParentTitle (se usa en el DataTemplate)
         public bool ShowParentTitle
         {
             get => (bool)GetValue(ShowParentTitleProperty);
@@ -68,6 +96,7 @@ namespace LateralMenu.Controls
             DependencyProperty.Register(nameof(ShowParentTitle), typeof(bool),
                 typeof(InstallationsListControl), new PropertyMetadata(false));
 
+        // Agrupación y ordenación
         public bool GroupByValue
         {
             get => (bool)GetValue(GroupByValueProperty);
@@ -96,17 +125,35 @@ namespace LateralMenu.Controls
                 typeof(InstallationsListControl), new PropertyMetadata(true, OnGroupingSortingChanged));
 
 
-        public ListDepthMode DepthMode
+        // --- Filtering ---
+        public bool FilteringEnabled
         {
-            get => (ListDepthMode)GetValue(DepthModeProperty);
-            set => SetValue(DepthModeProperty, value);
+            get { return (bool)GetValue(FilteringEnabledProperty); }
+            set { SetValue(FilteringEnabledProperty, value); }
         }
-        public static readonly DependencyProperty DepthModeProperty =
-            DependencyProperty.Register(nameof(DepthMode), typeof(ListDepthMode),
+        public static readonly DependencyProperty FilteringEnabledProperty =
+            DependencyProperty.Register(nameof(FilteringEnabled), typeof(bool),
                 typeof(InstallationsListControl),
-                new PropertyMetadata(ListDepthMode.FirstLevel, OnDataSourceChanged));
+                new PropertyMetadata(false, OnFilterChanged));
 
-        // Icon geometries (5)
+        public string FilterSelected
+        {
+            get { return (string)GetValue(FilterSelectedProperty); }
+            set { SetValue(FilterSelectedProperty, value); }
+        }
+        public static readonly DependencyProperty FilterSelectedProperty =
+            DependencyProperty.Register(nameof(FilterSelected), typeof(string),
+                typeof(InstallationsListControl),
+                new PropertyMetadata(string.Empty, OnFilterChanged));
+
+        private static void OnFilterChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+        {
+            // Reaplicar todo (rebind + filtro + grupo/orden)
+            ((InstallationsListControl)d).RebindAndRefresh();
+        }
+
+
+        // Iconos de estado
         public Geometry StatusBackIconData
         {
             get => (Geometry)GetValue(StatusBackIconDataProperty);
@@ -147,19 +194,8 @@ namespace LateralMenu.Controls
                 typeof(InstallationsListControl),
                 new PropertyMetadata(Geometry.Parse(DEFAULT_STATUS_ALARM_GLYPH)));
 
-        public Geometry FavoriteIconData
-        {
-            get => (Geometry)GetValue(FavoriteIconDataProperty);
-            set => SetValue(FavoriteIconDataProperty, value);
-        }
-        public static readonly DependencyProperty FavoriteIconDataProperty =
-            DependencyProperty.Register(nameof(FavoriteIconData), typeof(Geometry),
-                typeof(InstallationsListControl),
-                new PropertyMetadata(Geometry.Parse(DEFAULT_FAVORITE_STAR)));
-
-        // Events
+        // Evento de selección / doble clic
         public event EventHandler<TreeNodeEventArgs> ItemInvoked;
-        public event EventHandler<TreeNodeEventArgs> FavoriteToggleRequested;
 
         #endregion
 
@@ -175,9 +211,6 @@ namespace LateralMenu.Controls
 
         private const string DEFAULT_STATUS_ALARM_GLYPH =
             "M10.8,9l3-3c.1-.1.2-.3.2-.5s0-.4-.2-.5l-.9-.9c-.3-.3-.7-.3-1,0l-3,3-3-3c-.1-.1-.3-.2-.5-.2h0c-.2,0-.4,0-.5.2l-.9.9c-.1.1-.2.3-.2.5s0,.3.2.5l3,3-3,3c-.3.3-.3.7,0,1l.9.9c.1.1.3.2.5.2h0c.2,0,.4,0,.5-.2l3-3,3,3c.3.3.7.3,1,0l.9-.9c.3-.3.3-.7,0-1l-3-3Z";
-
-        private const string DEFAULT_FAVORITE_STAR =
-            "M11.2691 4.41115C11.5006 3.89177 11.6164 3.63208 11.7776 3.55211C11.9176 3.48263 12.082 3.48263 12.222 3.55211C12.3832 3.63208 12.499 3.89177 12.7305 4.41115L14.5745 8.54808C14.643 8.70162 14.6772 8.77839 14.7302 8.83718C14.777 8.8892 14.8343 8.93081 14.8982 8.95929C14.9705 8.99149 15.0541 9.00031 15.2213 9.01795L19.7256 9.49336C20.2911 9.55304 20.5738 9.58288 20.6997 9.71147C20.809 9.82316 20.8598 9.97956 20.837 10.1342C20.8108 10.3122 20.5996 10.5025 20.1772 10.8832L16.8125 13.9154C16.6877 14.0279 16.6252 14.0842 16.5857 14.1527C16.5507 14.2134 16.5288 14.2807 16.5215 14.3503C16.5132 14.429 16.5306 14.5112 16.5655 14.6757L17.5053 19.1064C17.6233 19.6627 17.6823 19.9408 17.5989 20.1002C17.5264 20.2388 17.3934 20.3354 17.2393 20.3615C17.0619 20.3915 16.8156 20.2495 16.323 19.9654L12.3995 17.7024C12.2539 17.6184 12.1811 17.5765 12.1037 17.56C12.0352 17.5455 11.9644 17.5455 11.8959 17.56C11.8185 17.5765 11.7457 17.6184 11.6001 17.7024L7.67662 19.9654C7.18404 20.2495 6.93775 20.3915 6.76034 20.3615C6.60623 20.3354 6.47319 20.2388 6.40075 20.1002C6.31736 19.9408 6.37635 19.6627 6.49434 19.1064L7.4341 14.6757C7.46898 14.5112 7.48642 14.429 7.47814 14.3503C7.47081 14.2807 7.44894 14.2134 7.41394 14.1527C7.37439 14.0842 7.31195 14.0279 7.18708 13.9154L3.82246 10.8832C3.40005 10.5025 3.18884 10.3122 3.16258 10.1342C3.13978 9.97956 3.19059 9.82316 3.29993 9.71147C3.42581 9.58288 3.70856 9.55304 4.27406 9.49336L8.77835 9.01795C8.94553 9.00031 9.02911 8.99149 9.10139 8.95929C9.16534 8.93081 9.2226 8.8892 9.26946 8.83718C9.32241 8.77839 9.35663 8.70162 9.42508 8.54808L11.2691 4.41115Z";
         #endregion
 
         #region ===== Internal binding pivot & view shaping =====
@@ -192,48 +225,74 @@ namespace LateralMenu.Controls
                 typeof(InstallationsListControl), new PropertyMetadata(null, OnInternalItemsChanged));
 
         private static void OnDataSourceChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
-            => ((InstallationsListControl)d).RebindAndRefresh();
+        {
+            var ctl = (InstallationsListControl)d;
+            ctl.LogInfo(() =>
+            {
+                var oldCnt = (e.OldValue as IEnumerable<TreeNode>)?.Count() ?? 0;
+                var newCnt = (e.NewValue as IEnumerable<TreeNode>)?.Count() ?? 0;
+                return $"List: ItemsSource changed. oldCount={oldCnt}, newCount={newCnt}";
+            });
+            ctl.RebindAndRefresh();
+        }
 
         private static void OnGroupingSortingChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
-            => ((InstallationsListControl)d).ApplyGroupingAndSorting();
+        {
+            var ctl = (InstallationsListControl)d;
+            ctl.LogInfo(() => $"List: flag changed → {e.Property.Name}={(e.NewValue ?? "(null)")}. Reapplying grouping/sorting.");
+            ctl.ApplyGroupingAndSorting();
+        }
 
         private static void OnInternalItemsChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
-            => ((InstallationsListControl)d).ApplyGroupingAndSorting();
+        {
+            var ctl = (InstallationsListControl)d;
+            ctl.LogInfo(() =>
+            {
+                var cnt = (e.NewValue as IEnumerable<TreeNode>)?.Count() ?? 0;
+                return $"List: _InternalItems changed. count={cnt}";
+            });
+            ctl.ApplyGroupingAndSorting();
+        }
 
         private void RebindAndRefresh()
         {
-            IEnumerable<TreeNode> baseItems = null;
+            // 1) Cargar ItemsSource base
+            IEnumerable<TreeNode> baseItems = ItemsSource;
 
-            if (ItemsSource != null)
+            // 2) Construir set del filtro seleccionado (normalizado una sola vez por rebind)
+            _filterSelectedSet = BuildSetFromCsv(FilterSelected);
+
+            // 3) Aplicar filtro (reglas: si FilteringEnabled == false OR set vacío => no filtra)
+            if (FilteringEnabled && _filterSelectedSet != null && _filterSelectedSet.Count > 0 && baseItems != null)
             {
-                baseItems = ItemsSource;
-            }
-            else if (ParentNode != null)
-            {
-                if (DepthMode == ListDepthMode.FirstLevel)
-                {
-                    baseItems = ParentNode.Items;
-                }
-                else // TwoLevelsFlat
-                {
-                    baseItems = ParentNode.Items?.SelectMany(c => c.Items);
-                }
+                // Filtramos por TreeNode.Value ∈ set
+                baseItems = baseItems.Where(n =>
+                    n != null &&
+                    !string.IsNullOrWhiteSpace(n.Value) &&
+                    _filterSelectedSet.Contains(n.Value.Trim()));
             }
 
-            // Ignore content nodes everywhere
-            _InternalItems = baseItems?
-                .Where(n => n != null && !n.IsContent)
-                .ToList();
-
+            // 4) Persistir pivot interno y re-aplicar shaping
+            _InternalItems = baseItems?.Where(n => n != null).ToList();
             ApplyGroupingAndSorting();
         }
 
 
+
         private void ApplyGroupingAndSorting()
         {
-            if (PART_List == null) return;
+            if (PART_List == null)
+            {
+                LogInfo(() => "List: ApplyGroupingAndSorting → PART_List NULL (template not applied yet?)");
+                return;
+            }
+
             var view = CollectionViewSource.GetDefaultView(_InternalItems);
-            if (view == null) return;
+            if (view == null)
+            {
+                LogInfo(() => "List: ApplyGroupingAndSorting → no view (null _InternalItems).");
+                return;
+            }
 
             bool shouldGroup = GroupByValue;
 
@@ -259,17 +318,23 @@ namespace LateralMenu.Controls
                 var gs = (GroupStyle)Resources["DefaultGroupStyle"];
                 PART_List.GroupStyle.Add(gs);
             }
+
+            var count = _InternalItems?.Count() ?? 0;
+            LogInfo(() => $"List: ApplyGroupingAndSorting → items={count}, groupByValue={shouldGroup}, sortBySeverity={SortBySeverity}, desc={SeveritySortDescending}");
         }
 
         #endregion
 
-        #region ===== Interactions (rows) =====
+        #region ===== Interactions =====
 
         private void OnSelectionChangedClear(object sender, SelectionChangedEventArgs e)
         {
             var lv = sender as ListView;
             if (lv != null && lv.SelectedItem != null)
+            {
+                LogInfo(() => "List: SelectionChanged → clearing selection");
                 lv.SelectedItem = null;
+            }
         }
 
         private void OnListMouseDoubleClick(object sender, MouseButtonEventArgs e)
@@ -278,22 +343,19 @@ namespace LateralMenu.Controls
             var lvi = ItemsControl.ContainerFromElement(PART_List, dep) as ListViewItem;
             if (lvi != null && lvi.DataContext is TreeNode node)
             {
+                LogInfo(() => $"List: DoubleClick → ItemInvoked path='{node?.Path ?? "(null)"}', title='{node?.Title ?? "(null)"}'");
                 ItemInvoked?.Invoke(this, new TreeNodeEventArgs(node));
                 e.Handled = true;
             }
-        }
-
-        private void OnFavoriteIconClick(object sender, MouseButtonEventArgs e)
-        {
-            e.Handled = true; // don't change selection
-            var fe = sender as FrameworkElement;
-            if (fe != null && fe.DataContext is TreeNode node)
-                FavoriteToggleRequested?.Invoke(this, new TreeNodeEventArgs(node));
+            else
+            {
+                LogInfo(() => "List: DoubleClick → no item resolved (hit outside row?)");
+            }
         }
 
         #endregion
 
-        #region ===== Group header chevron animation (code-behind) =====
+        #region ===== Group header chevron animation =====
 
         private const double ChevronExpandedAngle = 0.0;   // down
         private const double ChevronCollapsedAngle = 90.0; // left
@@ -330,7 +392,6 @@ namespace LateralMenu.Controls
             rt.BeginAnimation(RotateTransform.AngleProperty, da, HandoffBehavior.SnapshotAndReplace);
         }
 
-
         private void OnHeaderToggleLoaded(object sender, RoutedEventArgs e)
         {
             var toggle = sender as ToggleButton;
@@ -341,6 +402,7 @@ namespace LateralMenu.Controls
             if (rt == null) return;
 
             rt.Angle = (toggle.IsChecked == true) ? ChevronExpandedAngle : ChevronCollapsedAngle;
+            LogInfo(() => $"List: GroupHeader Loaded → IsExpanded={toggle.IsChecked}");
         }
 
         private void OnHeaderChecked(object sender, RoutedEventArgs e)
@@ -350,6 +412,7 @@ namespace LateralMenu.Controls
 
             var parts = GetChevronParts(toggle);
             AnimateAngle(parts.rt, ChevronExpandedAngle);
+            LogInfo(() => "List: GroupHeader Checked → expand");
         }
 
         private void OnHeaderUnchecked(object sender, RoutedEventArgs e)
@@ -359,6 +422,7 @@ namespace LateralMenu.Controls
 
             var parts = GetChevronParts(toggle);
             AnimateAngle(parts.rt, ChevronCollapsedAngle);
+            LogInfo(() => "List: GroupHeader Unchecked → collapse");
         }
 
         #endregion

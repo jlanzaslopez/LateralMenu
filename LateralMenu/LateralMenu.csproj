@@ -32,6 +32,14 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="ArchestrA.Client.CommonCore">
+      <HintPath>..\..\..\..\..\..\Program Files (x86)\ArchestrA\Framework\AcfSdk\Libs\ArchestrA.Client.CommonCore.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="ArchestrA.Client.CommonUtil">
+      <HintPath>..\..\..\..\..\..\Program Files (x86)\ArchestrA\Framework\AcfSdk\Libs\ArchestrA.Client.CommonUtil.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
     <Reference Include="ArchestrA.Client.Navigation">
       <HintPath>..\..\..\..\..\..\Program Files (x86)\ArchestrA\Framework\AcfSdk\Libs\ArchestrA.Client.Navigation.dll</HintPath>
       <Private>False</Private>
@@ -39,6 +47,9 @@
     <Reference Include="ArchestrA.Client.RuntimeData">
       <HintPath>..\..\..\..\..\..\Program Files (x86)\ArchestrA\Framework\AcfSdk\Libs\ArchestrA.Client.RuntimeData.dll</HintPath>
       <Private>False</Private>
+    </Reference>
+    <Reference Include="ArchestrA.Client.ViewApp">
+      <HintPath>..\..\..\..\..\..\Program Files (x86)\ArchestrA\Framework\AcfSdk\Libs\ArchestrA.Client.ViewApp.dll</HintPath>
     </Reference>
     <Reference Include="ArchestrA.Diagnostics.LoggerClient">
       <HintPath>..\..\..\..\..\..\Program Files (x86)\ArchestrA\Framework\AcfSdk\SharedLibs\ArchestrA.Diagnostics.LoggerClient.dll</HintPath>
@@ -104,6 +115,12 @@
       <LastGenOutput>Settings.Designer.cs</LastGenOutput>
     </None>
   </ItemGroup>
-  <ItemGroup />
+  <ItemGroup>
+    <Resource Include="AppManifest.xml" />
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <PropertyGroup>
+    <PostBuildEvent>copy "$(ProjectDir)AppManifest.xml" "$(TargetDir)"
+</PostBuildEvent>
+  </PropertyGroup>
 </Project>
